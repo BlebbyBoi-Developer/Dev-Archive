@@ -3,6 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <title>Knowledge Archive</title>
+  <style>
+#progress-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background: #222;
+  z-index: 9999;
+}
+
+#progress-bar {
+  height: 10px;
+  width: 0%;
+  background: limegreen;
+  transition: width 0.3s ease;
+}
+</style>
 </head>
 <body>
 
@@ -143,5 +161,102 @@
 <li><a href="https://caniuse.com/">Can I Use</a></li>
 </ul>
 
+<script>
+const STORAGE_KEY = "dev_archive_progress_v2";
+
+// Load saved progress
+let saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+
+// Get all links
+const links = document.querySelectorAll("a");
+
+// Assign IDs automatically if missing
+links.forEach((link, index) => {
+  if (!link.dataset.id) {
+    link.dataset.id = "link_" + index;
+  }
+
+  const id = link.dataset.id;
+
+  // initialize state
+  if (!saved[id]) {
+    saved[id] = {
+      done: false,
+      url: link.href
+    };
+  }
+
+  // apply saved UI state
+  if (saved[id].done) {
+    markDone(link);
+  }
+
+  // click handler
+  link.addEventListener("click", () => {
+    saved[id].done = true;
+    markDone(link);
+
+    save();
+    updateUI();
+  });
+});
+
+// mark link visually done
+function markDone(link) {
+  link.style.textDecoration = "line-through";
+  link.style.opacity = "0.5";
+}
+
+// save data
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+}
+
+// stats
+function getTotal() {
+  return Object.keys(saved).length;
+}
+
+function getRemaining() {
+  return Object.values(saved).filter(x => !x.done).length;
+}
+
+function getDone() {
+  return getTotal() - getRemaining();
+}
+
+// progress bar
+const progressBar = document.getElementById("progress-bar");
+
+function updateProgressBar() {
+  const percent = (getDone() / getTotal()) * 100;
+  progressBar.style.width = percent + "%";
+}
+
+// optional counter UI
+const counter = document.createElement("div");
+counter.style.position = "fixed";
+counter.style.bottom = "10px";
+counter.style.right = "10px";
+counter.style.padding = "10px";
+counter.style.background = "black";
+counter.style.color = "white";
+counter.style.fontFamily = "monospace";
+counter.style.zIndex = "9999";
+document.body.appendChild(counter);
+
+// update UI
+function updateUI() {
+  counter.innerText = `📚 ${getDone()} / ${getTotal()} completed`;
+  updateProgressBar();
+}
+
+// init
+updateUI();
+</script>
+
 </body>
+<div id="progress-container">
+  <div id="progress-bar"></div>
+</div>
 </html>
